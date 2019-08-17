@@ -1,0 +1,21 @@
+type Job {
+  entryId: ID!
+  NextTime: Timestamp
+  PreviousTime: Timestamp
+}
+
+type Query {
+  jobs: [Job!]!
+}
+
+input AddJobInput {
+  cronExp: String!
+  absolutePath: String!
+  shellCmd: String!
+}
+
+type Mutation {
+  addJob(input: AddJobInput!): Job!
+}
+
+scalar Timestamp
