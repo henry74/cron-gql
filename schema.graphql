@@ -10,8 +10,9 @@ type Query {
 
 input AddJobInput {
   cronExp: String!
-  absolutePath: String!
-  shellCmd: String!
+  rootDir: String!
+  cmd: String!
+  args: String!
 }
 
 type Mutation {

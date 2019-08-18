@@ -3,9 +3,10 @@
 package cron_gql
 
 type AddJobInput struct {
-	CronExp      string `json:"cronExp"`
-	AbsolutePath string `json:"absolutePath"`
-	ShellCmd     string `json:"shellCmd"`
+	CronExp string `json:"cronExp"`
+	RootDir string `json:"rootDir"`
+	Cmd     string `json:"cmd"`
+	Args    string `json:"args"`
 }
 
 type Job struct {

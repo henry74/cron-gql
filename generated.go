@@ -193,8 +193,9 @@ type Query {
 
 input AddJobInput {
   cronExp: String!
-  absolutePath: String!
-  shellCmd: String!
+  rootDir: String!
+  cmd: String!
+  args: String!
 }
 
 type Mutation {
@@ -1697,15 +1698,21 @@ func (ec *executionContext) unmarshalInputAddJobInput(ctx context.Context, obj i
 			if err != nil {
 				return it, err
 			}
-		case "absolutePath":
+		case "rootDir":
 			var err error
-			it.AbsolutePath, err = ec.unmarshalNString2string(ctx, v)
+			it.RootDir, err = ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
-		case "shellCmd":
+		case "cmd":
 			var err error
-			it.ShellCmd, err = ec.unmarshalNString2string(ctx, v)
+			it.Cmd, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "args":
+			var err error
+			it.Args, err = ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}

@@ -2,7 +2,7 @@
 <p>
 </p>
 
-> Go-based cron scheduler wrapped in a GraphQL inteface
+> Go-based cron scheduler wrapped in a GraphQL interface
 
 ## Install
 
