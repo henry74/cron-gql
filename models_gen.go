@@ -10,7 +10,7 @@ type AddJobInput struct {
 }
 
 type Job struct {
-	EntryID string `json:"entryId"`
+	JobID   string `json:"jobID"`
 	CronExp string `json:"cronExp"`
 	RootDir string `json:"rootDir"`
 	Cmd     string `json:"cmd"`

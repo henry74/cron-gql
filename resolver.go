@@ -27,10 +27,18 @@ func (r *Resolver) Query() QueryResolver {
 type mutationResolver struct{ *Resolver }
 
 func (r *mutationResolver) AddJob(ctx context.Context, input AddJobInput) (*Job, error) {
-	entryId, err := r.Cron.AddFunc(input.CronExp, func() { execute(input.RootDir, input.Cmd, input.Args) })
-	job := Job{EntryID: fmt.Sprintf("%v", entryId), CronExp: input.CronExp, RootDir: input.RootDir, Cmd: input.Cmd, Args: input.Args}
-	r.RunningJobs[job.EntryID] = job
+	entryID, err := r.Cron.AddFunc(input.CronExp, func() { execute(input.RootDir, input.Cmd, input.Args) })
+	job := Job{JobID: fmt.Sprintf("%v", entryID), CronExp: input.CronExp, RootDir: input.RootDir, Cmd: input.Cmd, Args: input.Args}
+	r.RunningJobs[job.JobID] = job
 	return &job, err
+}
+
+func (r *mutationResolver) RemoveJob(ctx context.Context, jobID int) (*Job, error) {
+	r.Cron.Remove(cron.EntryID(jobID))
+	job := r.RunningJobs[fmt.Sprintf("%v", jobID)]
+	delete(r.RunningJobs, fmt.Sprintf("%v", jobID))
+	return &job, nil
+
 }
 
 type queryResolver struct{ *Resolver }
@@ -41,8 +49,8 @@ func (r *queryResolver) Jobs(ctx context.Context) ([]*Job, error) {
 	for _, v := range r.Cron.Entries() {
 		entryIDs = append(entryIDs, fmt.Sprintf("%v", v.ID))
 	}
-	for _, entryID := range entryIDs {
-		job := r.RunningJobs[entryID]
+	for _, jobID := range entryIDs {
+		job := r.RunningJobs[jobID]
 		jobs = append(jobs, &job)
 	}
 	return jobs, nil

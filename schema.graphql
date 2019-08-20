@@ -1,5 +1,5 @@
 type Job {
-  entryId: ID!
+  jobID: ID!
   cronExp: String!
   rootDir: String!
   cmd: String!
@@ -19,6 +19,5 @@ input AddJobInput {
 
 type Mutation {
   addJob(input: AddJobInput!): Job!
+  removeJob(JobID: Int!): Job!
 }
-
-scalar Timestamp

@@ -46,12 +46,13 @@ type ComplexityRoot struct {
 		Args    func(childComplexity int) int
 		Cmd     func(childComplexity int) int
 		CronExp func(childComplexity int) int
-		EntryID func(childComplexity int) int
+		JobID   func(childComplexity int) int
 		RootDir func(childComplexity int) int
 	}
 
 	Mutation struct {
-		AddJob func(childComplexity int, input AddJobInput) int
+		AddJob    func(childComplexity int, input AddJobInput) int
+		RemoveJob func(childComplexity int, jobID int) int
 	}
 
 	Query struct {
@@ -61,6 +62,7 @@ type ComplexityRoot struct {
 
 type MutationResolver interface {
 	AddJob(ctx context.Context, input AddJobInput) (*Job, error)
+	RemoveJob(ctx context.Context, jobID int) (*Job, error)
 }
 type QueryResolver interface {
 	Jobs(ctx context.Context) ([]*Job, error)
@@ -102,12 +104,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Job.CronExp(childComplexity), true
 
-	case "Job.entryId":
-		if e.complexity.Job.EntryID == nil {
+	case "Job.jobID":
+		if e.complexity.Job.JobID == nil {
 			break
 		}
 
-		return e.complexity.Job.EntryID(childComplexity), true
+		return e.complexity.Job.JobID(childComplexity), true
 
 	case "Job.rootDir":
 		if e.complexity.Job.RootDir == nil {
@@ -127,6 +129,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.AddJob(childComplexity, args["input"].(AddJobInput)), true
+
+	case "Mutation.removeJob":
+		if e.complexity.Mutation.RemoveJob == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_removeJob_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.RemoveJob(childComplexity, args["JobID"].(int)), true
 
 	case "Query.jobs":
 		if e.complexity.Query.Jobs == nil {
@@ -198,7 +212,7 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 
 var parsedSchema = gqlparser.MustLoadSchema(
 	&ast.Source{Name: "schema.graphql", Input: `type Job {
-  entryId: ID!
+  jobID: ID!
   cronExp: String!
   rootDir: String!
   cmd: String!
@@ -218,9 +232,8 @@ input AddJobInput {
 
 type Mutation {
   addJob(input: AddJobInput!): Job!
+  removeJob(JobID: Int!): Job!
 }
-
-scalar Timestamp
 `},
 )
 
@@ -239,6 +252,20 @@ func (ec *executionContext) field_Mutation_addJob_args(ctx context.Context, rawA
 		}
 	}
 	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_removeJob_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int
+	if tmp, ok := rawArgs["JobID"]; ok {
+		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["JobID"] = arg0
 	return args, nil
 }
 
@@ -292,7 +319,7 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 
 // region    **************************** field.gotpl *****************************
 
-func (ec *executionContext) _Job_entryId(ctx context.Context, field graphql.CollectedField, obj *Job) (ret graphql.Marshaler) {
+func (ec *executionContext) _Job_jobID(ctx context.Context, field graphql.CollectedField, obj *Job) (ret graphql.Marshaler) {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() {
 		if r := recover(); r != nil {
@@ -311,7 +338,7 @@ func (ec *executionContext) _Job_entryId(ctx context.Context, field graphql.Coll
 	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.EntryID, nil
+		return obj.JobID, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -504,6 +531,50 @@ func (ec *executionContext) _Mutation_addJob(ctx context.Context, field graphql.
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return ec.resolvers.Mutation().AddJob(rctx, args["input"].(AddJobInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*Job)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNJob2ᚖgithubᚗcomᚋhenry74ᚋcronᚑgqlᚐJob(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_removeJob(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_removeJob_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	rctx.Args = args
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().RemoveJob(rctx, args["JobID"].(int))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1839,8 +1910,8 @@ func (ec *executionContext) _Job(ctx context.Context, sel ast.SelectionSet, obj 
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Job")
-		case "entryId":
-			out.Values[i] = ec._Job_entryId(ctx, field, obj)
+		case "jobID":
+			out.Values[i] = ec._Job_jobID(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -1892,6 +1963,11 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			out.Values[i] = graphql.MarshalString("Mutation")
 		case "addJob":
 			out.Values[i] = ec._Mutation_addJob(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "removeJob":
+			out.Values[i] = ec._Mutation_removeJob(ctx, field)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -2219,6 +2295,20 @@ func (ec *executionContext) unmarshalNID2string(ctx context.Context, v interface
 
 func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
 	res := graphql.MarshalID(v)
+	if res == graphql.Null {
+		if !ec.HasError(graphql.GetResolverContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+	}
+	return res
+}
+
+func (ec *executionContext) unmarshalNInt2int(ctx context.Context, v interface{}) (int, error) {
+	return graphql.UnmarshalInt(v)
+}
+
+func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.SelectionSet, v int) graphql.Marshaler {
+	res := graphql.MarshalInt(v)
 	if res == graphql.Null {
 		if !ec.HasError(graphql.GetResolverContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
