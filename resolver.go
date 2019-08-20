@@ -37,8 +37,13 @@ type queryResolver struct{ *Resolver }
 
 func (r *queryResolver) Jobs(ctx context.Context) ([]*Job, error) {
 	jobs := []*Job{}
-	for _, v := range r.RunningJobs {
-		jobs = append(jobs, &Job{EntryID: v.EntryID, CronExp: v.CronExp, RootDir: v.RootDir, Cmd: v.Cmd, Args: v.Args})
+	entryIDs := []string{}
+	for _, v := range r.Cron.Entries() {
+		entryIDs = append(entryIDs, fmt.Sprintf("%v", v.ID))
+	}
+	for _, entryID := range entryIDs {
+		job := r.RunningJobs[entryID]
+		jobs = append(jobs, &job)
 	}
 	return jobs, nil
 }
