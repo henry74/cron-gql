@@ -13,7 +13,8 @@ import (
 ) // THIS CODE IS A STARTING POINT ONLY. IT WILL NOT BE UPDATED WITH SCHEMA CHANGES.
 
 type Resolver struct {
-	Cron *cron.Cron
+	Cron        *cron.Cron
+	RunningJobs map[string]Job
 }
 
 func (r *Resolver) Mutation() MutationResolver {
@@ -27,14 +28,19 @@ type mutationResolver struct{ *Resolver }
 
 func (r *mutationResolver) AddJob(ctx context.Context, input AddJobInput) (*Job, error) {
 	entryId, err := r.Cron.AddFunc(input.CronExp, func() { execute(input.RootDir, input.Cmd, input.Args) })
-	result := Job{EntryID: fmt.Sprintf("%v", entryId)}
-	return &result, err
+	job := Job{EntryID: fmt.Sprintf("%v", entryId), CronExp: input.CronExp, RootDir: input.RootDir, Cmd: input.Cmd, Args: input.Args}
+	r.RunningJobs[job.EntryID] = job
+	return &job, err
 }
 
 type queryResolver struct{ *Resolver }
 
 func (r *queryResolver) Jobs(ctx context.Context) ([]*Job, error) {
-	panic("not implemented")
+	jobs := []*Job{}
+	for _, v := range r.RunningJobs {
+		jobs = append(jobs, &Job{EntryID: v.EntryID, CronExp: v.CronExp, RootDir: v.RootDir, Cmd: v.Cmd, Args: v.Args})
+	}
+	return jobs, nil
 }
 
 func execute(pwd string, cmd string, args string) (output string, err error) {

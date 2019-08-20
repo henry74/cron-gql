@@ -1,11 +1,13 @@
 type Job {
   entryId: ID!
-  NextTime: Timestamp
-  PreviousTime: Timestamp
+  cronExp: String!
+  rootDir: String!
+  cmd: String!
+  args: String!
 }
 
 type Query {
-  jobs: [Job!]!
+  jobs: [Job]!
 }
 
 input AddJobInput {
