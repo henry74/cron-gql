@@ -20,7 +20,7 @@ func main() {
 
 	client := cron.New()
 	client.Start()
-	emptyJobs := make(map[string]cron_gql.Job)
+	emptyJobs := make(map[int]cron_gql.Job)
 
 	http.Handle("/", handler.Playground("GraphQL playground", "/query"))
 	http.Handle("/query", handler.GraphQL(cron_gql.NewExecutableSchema(cron_gql.Config{Resolvers: &cron_gql.Resolver{Cron: client, RunningJobs: emptyJobs}})))

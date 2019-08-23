@@ -1,23 +1,46 @@
 type Job {
-  jobID: ID!
+  "Unique ID for the job (generated)"
+  jobID: Int!
+  "Cron expression used for scheduling e.g. '0 * * * *'"
   cronExp: String!
+  "Root directory to run the command"
   rootDir: String!
+  "Terminal-based command"
   cmd: String!
-  args: String!
+  "Command arguments"
+  args: String
+  "Tags for easier job retrieval"
+  tags: [String]
 }
 
 type Query {
-  jobs: [Job]!
+  "Retrieve list of scheduled jobs"
+  jobs(input: JobsInput): [Job]!
+}
+
+input JobsInput {
+  "Return job with unique jobID"
+  jobID: Int
+  "Return all jobs which match at least one of the tags"
+  tags: [String]
 }
 
 input AddJobInput {
+  "Cron expression for scheduling e.g. '0 * * * *'"
   cronExp: String!
+  "Root directory to run the command"
   rootDir: String!
+  "Terminal-based command"
   cmd: String!
-  args: String!
+  "Command arguments"
+  args: String
+  "Tags for easier job retrieval"
+  tags: [String]
 }
 
 type Mutation {
+  "Add a new scheduled job"
   addJob(input: AddJobInput!): Job!
+  "Remove a scheduled job"
   removeJob(JobID: Int!): Job!
 }

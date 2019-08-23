@@ -48,6 +48,7 @@ type ComplexityRoot struct {
 		CronExp func(childComplexity int) int
 		JobID   func(childComplexity int) int
 		RootDir func(childComplexity int) int
+		Tags    func(childComplexity int) int
 	}
 
 	Mutation struct {
@@ -56,7 +57,7 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		Jobs func(childComplexity int) int
+		Jobs func(childComplexity int, input *JobsInput) int
 	}
 }
 
@@ -65,7 +66,7 @@ type MutationResolver interface {
 	RemoveJob(ctx context.Context, jobID int) (*Job, error)
 }
 type QueryResolver interface {
-	Jobs(ctx context.Context) ([]*Job, error)
+	Jobs(ctx context.Context, input *JobsInput) ([]*Job, error)
 }
 
 type executableSchema struct {
@@ -118,6 +119,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Job.RootDir(childComplexity), true
 
+	case "Job.tags":
+		if e.complexity.Job.Tags == nil {
+			break
+		}
+
+		return e.complexity.Job.Tags(childComplexity), true
+
 	case "Mutation.addJob":
 		if e.complexity.Mutation.AddJob == nil {
 			break
@@ -147,7 +155,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		return e.complexity.Query.Jobs(childComplexity), true
+		args, err := ec.field_Query_jobs_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Jobs(childComplexity, args["input"].(*JobsInput)), true
 
 	}
 	return 0, false
@@ -212,26 +225,49 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 
 var parsedSchema = gqlparser.MustLoadSchema(
 	&ast.Source{Name: "schema.graphql", Input: `type Job {
-  jobID: ID!
+  "Unique ID for the job (generated)"
+  jobID: Int!
+  "Cron expression used for scheduling e.g. '0 * * * *'"
   cronExp: String!
+  "Root directory to run the command"
   rootDir: String!
+  "Terminal-based command"
   cmd: String!
-  args: String!
+  "Command arguments"
+  args: String
+  "Tags for easier job retrieval"
+  tags: [String]
 }
 
 type Query {
-  jobs: [Job]!
+  "Retrieve list of scheduled jobs"
+  jobs(input: JobsInput): [Job]!
+}
+
+input JobsInput {
+  "Return job with unique jobID"
+  jobID: Int
+  "Return all jobs which match at least one of the tags"
+  tags: [String]
 }
 
 input AddJobInput {
+  "Cron expression for scheduling e.g. '0 * * * *'"
   cronExp: String!
+  "Root directory to run the command"
   rootDir: String!
+  "Terminal-based command"
   cmd: String!
-  args: String!
+  "Command arguments"
+  args: String
+  "Tags for easier job retrieval"
+  tags: [String]
 }
 
 type Mutation {
+  "Add a new scheduled job"
   addJob(input: AddJobInput!): Job!
+  "Remove a scheduled job"
   removeJob(JobID: Int!): Job!
 }
 `},
@@ -280,6 +316,20 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 		}
 	}
 	args["name"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_jobs_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *JobsInput
+	if tmp, ok := rawArgs["input"]; ok {
+		arg0, err = ec.unmarshalOJobsInput2ᚖgithubᚗcomᚋhenry74ᚋcronᚑgqlᚐJobsInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
 	return args, nil
 }
 
@@ -350,10 +400,10 @@ func (ec *executionContext) _Job_jobID(ctx context.Context, field graphql.Collec
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(int)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNID2string(ctx, field.Selections, res)
+	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Job_cronExp(ctx context.Context, field graphql.CollectedField, obj *Job) (ret graphql.Marshaler) {
@@ -493,15 +543,46 @@ func (ec *executionContext) _Job_args(ctx context.Context, field graphql.Collect
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !ec.HasError(rctx) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(*string)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Job_tags(ctx context.Context, field graphql.CollectedField, obj *Job) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Job",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Tags, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOString2ᚕᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_addJob(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -608,10 +689,17 @@ func (ec *executionContext) _Query_jobs(ctx context.Context, field graphql.Colle
 		IsMethod: true,
 	}
 	ctx = graphql.WithResolverContext(ctx, rctx)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_jobs_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	rctx.Args = args
 	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Jobs(rctx)
+		return ec.resolvers.Query().Jobs(rctx, args["input"].(*JobsInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1881,7 +1969,37 @@ func (ec *executionContext) unmarshalInputAddJobInput(ctx context.Context, obj i
 			}
 		case "args":
 			var err error
-			it.Args, err = ec.unmarshalNString2string(ctx, v)
+			it.Args, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "tags":
+			var err error
+			it.Tags, err = ec.unmarshalOString2ᚕᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputJobsInput(ctx context.Context, obj interface{}) (JobsInput, error) {
+	var it JobsInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "jobID":
+			var err error
+			it.JobID, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "tags":
+			var err error
+			it.Tags, err = ec.unmarshalOString2ᚕᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -1932,9 +2050,8 @@ func (ec *executionContext) _Job(ctx context.Context, sel ast.SelectionSet, obj 
 			}
 		case "args":
 			out.Values[i] = ec._Job_args(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
+		case "tags":
+			out.Values[i] = ec._Job_tags(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -2289,20 +2406,6 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
-func (ec *executionContext) unmarshalNID2string(ctx context.Context, v interface{}) (string, error) {
-	return graphql.UnmarshalID(v)
-}
-
-func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
-	res := graphql.MarshalID(v)
-	if res == graphql.Null {
-		if !ec.HasError(graphql.GetResolverContext(ctx)) {
-			ec.Errorf(ctx, "must not be null")
-		}
-	}
-	return res
-}
-
 func (ec *executionContext) unmarshalNInt2int(ctx context.Context, v interface{}) (int, error) {
 	return graphql.UnmarshalInt(v)
 }
@@ -2631,6 +2734,29 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	return ec.marshalOBoolean2bool(ctx, sel, *v)
 }
 
+func (ec *executionContext) unmarshalOInt2int(ctx context.Context, v interface{}) (int, error) {
+	return graphql.UnmarshalInt(v)
+}
+
+func (ec *executionContext) marshalOInt2int(ctx context.Context, sel ast.SelectionSet, v int) graphql.Marshaler {
+	return graphql.MarshalInt(v)
+}
+
+func (ec *executionContext) unmarshalOInt2ᚖint(ctx context.Context, v interface{}) (*int, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalOInt2int(ctx, v)
+	return &res, err
+}
+
+func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.SelectionSet, v *int) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec.marshalOInt2int(ctx, sel, *v)
+}
+
 func (ec *executionContext) marshalOJob2githubᚗcomᚋhenry74ᚋcronᚑgqlᚐJob(ctx context.Context, sel ast.SelectionSet, v Job) graphql.Marshaler {
 	return ec._Job(ctx, sel, &v)
 }
@@ -2642,12 +2768,56 @@ func (ec *executionContext) marshalOJob2ᚖgithubᚗcomᚋhenry74ᚋcronᚑgql�
 	return ec._Job(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalOJobsInput2githubᚗcomᚋhenry74ᚋcronᚑgqlᚐJobsInput(ctx context.Context, v interface{}) (JobsInput, error) {
+	return ec.unmarshalInputJobsInput(ctx, v)
+}
+
+func (ec *executionContext) unmarshalOJobsInput2ᚖgithubᚗcomᚋhenry74ᚋcronᚑgqlᚐJobsInput(ctx context.Context, v interface{}) (*JobsInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalOJobsInput2githubᚗcomᚋhenry74ᚋcronᚑgqlᚐJobsInput(ctx, v)
+	return &res, err
+}
+
 func (ec *executionContext) unmarshalOString2string(ctx context.Context, v interface{}) (string, error) {
 	return graphql.UnmarshalString(v)
 }
 
 func (ec *executionContext) marshalOString2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
 	return graphql.MarshalString(v)
+}
+
+func (ec *executionContext) unmarshalOString2ᚕᚖstring(ctx context.Context, v interface{}) ([]*string, error) {
+	var vSlice []interface{}
+	if v != nil {
+		if tmp1, ok := v.([]interface{}); ok {
+			vSlice = tmp1
+		} else {
+			vSlice = []interface{}{v}
+		}
+	}
+	var err error
+	res := make([]*string, len(vSlice))
+	for i := range vSlice {
+		res[i], err = ec.unmarshalOString2ᚖstring(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalOString2ᚕᚖstring(ctx context.Context, sel ast.SelectionSet, v []*string) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalOString2ᚖstring(ctx, sel, v[i])
+	}
+
+	return ret
 }
 
 func (ec *executionContext) unmarshalOString2ᚖstring(ctx context.Context, v interface{}) (*string, error) {
