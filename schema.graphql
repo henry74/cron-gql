@@ -11,6 +11,10 @@ type Job {
   args: String
   "Tags for easier job retrieval"
   tags: [String]
+  "Last executed time"
+  lastRun: String
+  "Next scheduled time"
+  nextRun: String
 }
 
 type Query {

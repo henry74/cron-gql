@@ -47,6 +47,8 @@ type ComplexityRoot struct {
 		Cmd     func(childComplexity int) int
 		CronExp func(childComplexity int) int
 		JobID   func(childComplexity int) int
+		LastRun func(childComplexity int) int
+		NextRun func(childComplexity int) int
 		RootDir func(childComplexity int) int
 		Tags    func(childComplexity int) int
 	}
@@ -111,6 +113,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Job.JobID(childComplexity), true
+
+	case "Job.lastRun":
+		if e.complexity.Job.LastRun == nil {
+			break
+		}
+
+		return e.complexity.Job.LastRun(childComplexity), true
+
+	case "Job.nextRun":
+		if e.complexity.Job.NextRun == nil {
+			break
+		}
+
+		return e.complexity.Job.NextRun(childComplexity), true
 
 	case "Job.rootDir":
 		if e.complexity.Job.RootDir == nil {
@@ -237,6 +253,10 @@ var parsedSchema = gqlparser.MustLoadSchema(
   args: String
   "Tags for easier job retrieval"
   tags: [String]
+  "Last executed time"
+  lastRun: String
+  "Next scheduled time"
+  nextRun: String
 }
 
 type Query {
@@ -583,6 +603,74 @@ func (ec *executionContext) _Job_tags(ctx context.Context, field graphql.Collect
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
 	return ec.marshalOString2ᚕᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Job_lastRun(ctx context.Context, field graphql.CollectedField, obj *Job) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Job",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.LastRun, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Job_nextRun(ctx context.Context, field graphql.CollectedField, obj *Job) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Job",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.NextRun, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_addJob(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -2052,6 +2140,10 @@ func (ec *executionContext) _Job(ctx context.Context, sel ast.SelectionSet, obj 
 			out.Values[i] = ec._Job_args(ctx, field, obj)
 		case "tags":
 			out.Values[i] = ec._Job_tags(ctx, field, obj)
+		case "lastRun":
+			out.Values[i] = ec._Job_lastRun(ctx, field, obj)
+		case "nextRun":
+			out.Values[i] = ec._Job_nextRun(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}

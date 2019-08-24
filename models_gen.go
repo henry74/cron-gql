@@ -28,6 +28,10 @@ type Job struct {
 	Args *string `json:"args"`
 	// Tags for easier job retrieval
 	Tags []*string `json:"tags"`
+	// Last executed time
+	LastRun *string `json:"lastRun"`
+	// Next scheduled time
+	NextRun *string `json:"nextRun"`
 }
 
 type JobsInput struct {

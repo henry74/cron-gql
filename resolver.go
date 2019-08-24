@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/dustin/go-humanize"
 	"github.com/robfig/cron/v3"
 ) // THIS CODE IS A STARTING POINT ONLY. IT WILL NOT BE UPDATED WITH SCHEMA CHANGES.
 
@@ -44,16 +45,15 @@ type queryResolver struct{ *Resolver }
 
 func (r *queryResolver) Jobs(ctx context.Context, input *JobsInput) ([]*Job, error) {
 	jobs := []*Job{}
-	entryIDs := []int{}
-	for _, v := range r.Cron.Entries() {
-		entryIDs = append(entryIDs, int(v.ID))
-	}
-	for _, jobID := range entryIDs {
-		job := r.RunningJobs[jobID]
+
+	for _, entry := range r.Cron.Entries() {
+		job, lastRun, nextRun := r.RunningJobs[int(entry.ID)], humanize.Time(entry.Prev), humanize.Time(entry.Next)
+		job.LastRun = &lastRun
+		job.NextRun = &nextRun
 
 		if input != nil && (len(input.Tags) > 0 || input.JobID != nil) {
 			if input.JobID != nil { // jobID input takes precedence over tag input
-				if *input.JobID == jobID {
+				if *input.JobID == int(entry.ID) {
 					jobs = append(jobs, &job)
 					break
 				}

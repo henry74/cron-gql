@@ -18,7 +18,7 @@ func main() {
 		port = defaultPort
 	}
 
-	client := cron.New()
+	client := cron.New(cron.WithLogger(cron.VerbosePrintfLogger(log.New(os.Stdout, "cron: ", log.LstdFlags))))
 	client.Start()
 	emptyJobs := make(map[int]cron_gql.Job)
 
