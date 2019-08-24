@@ -11,9 +11,9 @@ type Job {
   args: String
   "Tags for easier job retrieval"
   tags: [String]
-  "Last executed time"
+  "Last scheduled execution time (human friendly)"
   lastRun: String
-  "Next scheduled time"
+  "Next scheduled execution time (human friendly)"
   nextRun: String
 }
 
@@ -47,4 +47,6 @@ type Mutation {
   addJob(input: AddJobInput!): Job!
   "Remove a scheduled job"
   removeJob(JobID: Int!): Job!
+  "Immediately run a scheduled job"
+  runJob(JobID: Int!): Job!
 }

@@ -28,9 +28,9 @@ type Job struct {
 	Args *string `json:"args"`
 	// Tags for easier job retrieval
 	Tags []*string `json:"tags"`
-	// Last executed time
+	// Last scheduled execution time (human friendly)
 	LastRun *string `json:"lastRun"`
-	// Next scheduled time
+	// Next scheduled execution time (human friendly)
 	NextRun *string `json:"nextRun"`
 }
 

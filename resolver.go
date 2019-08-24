@@ -38,7 +38,20 @@ func (r *mutationResolver) RemoveJob(ctx context.Context, jobID int) (*Job, erro
 	job := r.RunningJobs[jobID]
 	delete(r.RunningJobs, jobID)
 	return &job, nil
+}
 
+func (r *mutationResolver) RunJob(ctx context.Context, jobID int) (*Job, error) {
+	job := Job{}
+	entry := r.Cron.Entry(cron.EntryID(jobID))
+	if entry.Valid() {
+		entry.Job.Run()
+		job = r.RunningJobs[jobID]
+		lastRun, nextRun := humanize.Time(entry.Prev), humanize.Time(entry.Next)
+		job.LastRun = &lastRun
+		job.NextRun = &nextRun
+
+	}
+	return &job, nil
 }
 
 type queryResolver struct{ *Resolver }
