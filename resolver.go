@@ -37,6 +37,7 @@ func (r *mutationResolver) AddJob(ctx context.Context, jobInput AddJobInput) (*J
 func (r *mutationResolver) RemoveJob(ctx context.Context, jobID int) (*Job, error) {
 	r.Cron.Remove(cron.EntryID(jobID))
 	job := r.RunningJobs[jobID]
+	job.humanizeTime()
 	delete(r.RunningJobs, jobID)
 	return &job, nil
 }
