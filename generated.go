@@ -43,14 +43,18 @@ type DirectiveRoot struct {
 
 type ComplexityRoot struct {
 	Job struct {
-		Args    func(childComplexity int) int
-		Cmd     func(childComplexity int) int
-		CronExp func(childComplexity int) int
-		JobID   func(childComplexity int) int
-		LastRun func(childComplexity int) int
-		NextRun func(childComplexity int) int
-		RootDir func(childComplexity int) int
-		Tags    func(childComplexity int) int
+		Args              func(childComplexity int) int
+		Cmd               func(childComplexity int) int
+		CronExp           func(childComplexity int) int
+		JobID             func(childComplexity int) int
+		LastForcedRun     func(childComplexity int) int
+		LastForcedTime    func(childComplexity int) int
+		LastScheduledRun  func(childComplexity int) int
+		LastScheduledTime func(childComplexity int) int
+		NextScheduledRun  func(childComplexity int) int
+		NextScheduledTime func(childComplexity int) int
+		RootDir           func(childComplexity int) int
+		Tags              func(childComplexity int) int
 	}
 
 	Mutation struct {
@@ -116,19 +120,47 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Job.JobID(childComplexity), true
 
-	case "Job.lastRun":
-		if e.complexity.Job.LastRun == nil {
+	case "Job.lastForcedRun":
+		if e.complexity.Job.LastForcedRun == nil {
 			break
 		}
 
-		return e.complexity.Job.LastRun(childComplexity), true
+		return e.complexity.Job.LastForcedRun(childComplexity), true
 
-	case "Job.nextRun":
-		if e.complexity.Job.NextRun == nil {
+	case "Job.lastForcedTime":
+		if e.complexity.Job.LastForcedTime == nil {
 			break
 		}
 
-		return e.complexity.Job.NextRun(childComplexity), true
+		return e.complexity.Job.LastForcedTime(childComplexity), true
+
+	case "Job.lastScheduledRun":
+		if e.complexity.Job.LastScheduledRun == nil {
+			break
+		}
+
+		return e.complexity.Job.LastScheduledRun(childComplexity), true
+
+	case "Job.lastScheduledTime":
+		if e.complexity.Job.LastScheduledTime == nil {
+			break
+		}
+
+		return e.complexity.Job.LastScheduledTime(childComplexity), true
+
+	case "Job.nextScheduledRun":
+		if e.complexity.Job.NextScheduledRun == nil {
+			break
+		}
+
+		return e.complexity.Job.NextScheduledRun(childComplexity), true
+
+	case "Job.nextScheduledTime":
+		if e.complexity.Job.NextScheduledTime == nil {
+			break
+		}
+
+		return e.complexity.Job.NextScheduledTime(childComplexity), true
 
 	case "Job.rootDir":
 		if e.complexity.Job.RootDir == nil {
@@ -268,9 +300,17 @@ var parsedSchema = gqlparser.MustLoadSchema(
   "Tags for easier job retrieval"
   tags: [String]
   "Last scheduled execution time (human friendly)"
-  lastRun: String
+  lastScheduledRun: String
   "Next scheduled execution time (human friendly)"
-  nextRun: String
+  nextScheduledRun: String
+  "Last forced execution time (human friendly)"
+  lastForcedRun: String
+  "Last scheduled execution time (seconds)"
+  lastScheduledTime: Int
+  "Next scheduled execution time (seconds)"
+  nextScheduledTime: Int
+  "Last forced execution time (seconds)"
+  lastForcedTime: Int
 }
 
 type Query {
@@ -635,7 +675,7 @@ func (ec *executionContext) _Job_tags(ctx context.Context, field graphql.Collect
 	return ec.marshalOString2ᚕᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Job_lastRun(ctx context.Context, field graphql.CollectedField, obj *Job) (ret graphql.Marshaler) {
+func (ec *executionContext) _Job_lastScheduledRun(ctx context.Context, field graphql.CollectedField, obj *Job) (ret graphql.Marshaler) {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() {
 		if r := recover(); r != nil {
@@ -654,7 +694,7 @@ func (ec *executionContext) _Job_lastRun(ctx context.Context, field graphql.Coll
 	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.LastRun, nil
+		return obj.LastScheduledRun, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -669,7 +709,7 @@ func (ec *executionContext) _Job_lastRun(ctx context.Context, field graphql.Coll
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Job_nextRun(ctx context.Context, field graphql.CollectedField, obj *Job) (ret graphql.Marshaler) {
+func (ec *executionContext) _Job_nextScheduledRun(ctx context.Context, field graphql.CollectedField, obj *Job) (ret graphql.Marshaler) {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() {
 		if r := recover(); r != nil {
@@ -688,7 +728,7 @@ func (ec *executionContext) _Job_nextRun(ctx context.Context, field graphql.Coll
 	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.NextRun, nil
+		return obj.NextScheduledRun, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -701,6 +741,142 @@ func (ec *executionContext) _Job_nextRun(ctx context.Context, field graphql.Coll
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Job_lastForcedRun(ctx context.Context, field graphql.CollectedField, obj *Job) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Job",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.LastForcedRun, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Job_lastScheduledTime(ctx context.Context, field graphql.CollectedField, obj *Job) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Job",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.LastScheduledTime, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Job_nextScheduledTime(ctx context.Context, field graphql.CollectedField, obj *Job) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Job",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.NextScheduledTime, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Job_lastForcedTime(ctx context.Context, field graphql.CollectedField, obj *Job) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Job",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.LastForcedTime, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_addJob(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -2214,10 +2390,18 @@ func (ec *executionContext) _Job(ctx context.Context, sel ast.SelectionSet, obj 
 			out.Values[i] = ec._Job_args(ctx, field, obj)
 		case "tags":
 			out.Values[i] = ec._Job_tags(ctx, field, obj)
-		case "lastRun":
-			out.Values[i] = ec._Job_lastRun(ctx, field, obj)
-		case "nextRun":
-			out.Values[i] = ec._Job_nextRun(ctx, field, obj)
+		case "lastScheduledRun":
+			out.Values[i] = ec._Job_lastScheduledRun(ctx, field, obj)
+		case "nextScheduledRun":
+			out.Values[i] = ec._Job_nextScheduledRun(ctx, field, obj)
+		case "lastForcedRun":
+			out.Values[i] = ec._Job_lastForcedRun(ctx, field, obj)
+		case "lastScheduledTime":
+			out.Values[i] = ec._Job_lastScheduledTime(ctx, field, obj)
+		case "nextScheduledTime":
+			out.Values[i] = ec._Job_nextScheduledTime(ctx, field, obj)
+		case "lastForcedTime":
+			out.Values[i] = ec._Job_lastForcedTime(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}

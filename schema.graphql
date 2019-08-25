@@ -12,9 +12,17 @@ type Job {
   "Tags for easier job retrieval"
   tags: [String]
   "Last scheduled execution time (human friendly)"
-  lastRun: String
+  lastScheduledRun: String
   "Next scheduled execution time (human friendly)"
-  nextRun: String
+  nextScheduledRun: String
+  "Last forced execution time (human friendly)"
+  lastForcedRun: String
+  "Last scheduled execution time (seconds)"
+  lastScheduledTime: Int
+  "Next scheduled execution time (seconds)"
+  nextScheduledTime: Int
+  "Last forced execution time (seconds)"
+  lastForcedTime: Int
 }
 
 type Query {

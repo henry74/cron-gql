@@ -29,9 +29,17 @@ type Job struct {
 	// Tags for easier job retrieval
 	Tags []*string `json:"tags"`
 	// Last scheduled execution time (human friendly)
-	LastRun *string `json:"lastRun"`
+	LastScheduledRun *string `json:"lastScheduledRun"`
 	// Next scheduled execution time (human friendly)
-	NextRun *string `json:"nextRun"`
+	NextScheduledRun *string `json:"nextScheduledRun"`
+	// Last forced execution time (human friendly)
+	LastForcedRun *string `json:"lastForcedRun"`
+	// Last scheduled execution time (seconds)
+	LastScheduledTime *int `json:"lastScheduledTime"`
+	// Next scheduled execution time (seconds)
+	NextScheduledTime *int `json:"nextScheduledTime"`
+	// Last forced execution time (seconds)
+	LastForcedTime *int `json:"lastForcedTime"`
 }
 
 type JobsInput struct {

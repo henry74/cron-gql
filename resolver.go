@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"time"
 
 	"github.com/dustin/go-humanize"
 	"github.com/robfig/cron/v3"
@@ -44,11 +45,15 @@ func (r *mutationResolver) RunJob(ctx context.Context, jobID int) (*Job, error) 
 	job := Job{}
 	entry := r.Cron.Entry(cron.EntryID(jobID))
 	if entry.Valid() {
-		entry.Job.Run()
+		go entry.Job.Run()
 		job = r.RunningJobs[jobID]
-		lastRun, nextRun := humanize.Time(entry.Prev), humanize.Time(entry.Next)
-		job.LastRun = &lastRun
-		job.NextRun = &nextRun
+		lastRunTime, nextRunTime, forcedRunTime := int(entry.Prev.Unix()), int(entry.Next.Unix()), int(time.Now().Unix())
+		job.LastScheduledTime = &lastRunTime
+		job.NextScheduledTime = &nextRunTime
+		job.LastForcedTime = &forcedRunTime
+		job.humanizeTime()
+
+		r.RunningJobs[jobID] = job
 
 	}
 	return &job, nil
@@ -60,9 +65,10 @@ func (r *queryResolver) Jobs(ctx context.Context, input *JobsInput) ([]*Job, err
 	jobs := []*Job{}
 
 	for _, entry := range r.Cron.Entries() {
-		job, lastRun, nextRun := r.RunningJobs[int(entry.ID)], humanize.Time(entry.Prev), humanize.Time(entry.Next)
-		job.LastRun = &lastRun
-		job.NextRun = &nextRun
+		job, lastRunTime, nextRunTime := r.RunningJobs[int(entry.ID)], int(entry.Prev.Unix()), int(entry.Next.Unix())
+		job.LastScheduledTime = &lastRunTime
+		job.NextScheduledTime = &nextRunTime
+		job.humanizeTime()
 
 		if input != nil && (len(input.Tags) > 0 || input.JobID != nil) {
 			if input.JobID != nil { // jobID input takes precedence over tag input
@@ -70,7 +76,7 @@ func (r *queryResolver) Jobs(ctx context.Context, input *JobsInput) ([]*Job, err
 					jobs = append(jobs, &job)
 					break
 				}
-			} else if matchTags(input.Tags, job) {
+			} else if job.matchTags(input.Tags) {
 				jobs = append(jobs, &job)
 			}
 		} else { // return all jobs
@@ -80,10 +86,10 @@ func (r *queryResolver) Jobs(ctx context.Context, input *JobsInput) ([]*Job, err
 	return jobs, nil
 }
 
-func matchTags(tagsToCheck []*string, job Job) bool {
+func (r *Job) matchTags(tagsToCheck []*string) bool {
 	result := false
 	tagMap := make(map[string]bool)
-	for _, jobTag := range job.Tags {
+	for _, jobTag := range r.Tags {
 		tagMap[*jobTag] = true
 	}
 	for _, tag := range tagsToCheck {
@@ -95,9 +101,21 @@ func matchTags(tagsToCheck []*string, job Job) bool {
 	return result
 }
 
-func execute(job AddJobInput) (output string, err error) {
+func (r *Job) humanizeTime() {
+	lastScheduledRun := humanize.Time(time.Unix(int64(*r.LastScheduledTime), 0))
+	nextScheduledRun := humanize.Time(time.Unix(int64(*r.NextScheduledTime), 0))
+	if r.LastForcedTime != nil {
+		lastForcedRun := humanize.Time(time.Unix(int64(*r.LastForcedTime), 0))
+		r.LastForcedRun = &lastForcedRun
+	}
+	r.LastScheduledRun = &lastScheduledRun
+	r.NextScheduledRun = &nextScheduledRun
+	return
+}
+
+func execute(job AddJobInput) (string, error) {
 	log.Printf("Changing directory to '%s'", job.RootDir)
-	err = os.Chdir(job.RootDir)
+	err := os.Chdir(job.RootDir)
 	if err != nil {
 		log.Printf("%s", err)
 	}
@@ -107,7 +125,7 @@ func execute(job AddJobInput) (output string, err error) {
 	if err != nil {
 		log.Printf("%s", err)
 	}
-	output = string(out[:])
+	output := string(out[:])
 	log.Println(output)
 	return output, err
 }
