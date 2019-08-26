@@ -1,4 +1,4 @@
-<h1 align="center">Welcome to cron-gql 👋</h1>
+<h1 align="center">Welcome to Cron-GQL 👋</h1>
 <p>
 </p>
 

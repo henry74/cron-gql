@@ -36,9 +36,14 @@ func (r *mutationResolver) AddJob(ctx context.Context, jobInput AddJobInput) (*J
 
 func (r *mutationResolver) RemoveJob(ctx context.Context, jobID int) (*Job, error) {
 	r.Cron.Remove(cron.EntryID(jobID))
-	job := r.RunningJobs[jobID]
-	job.humanizeTime()
-	delete(r.RunningJobs, jobID)
+	job := Job{}
+	if _, ok := r.RunningJobs[jobID]; ok {
+		log.Println(ok)
+		job = r.RunningJobs[jobID]
+		log.Println(job)
+		job.humanizeTime()
+		delete(r.RunningJobs, jobID)
+	}
 	return &job, nil
 }
 
@@ -103,14 +108,18 @@ func (r *Job) matchTags(tagsToCheck []*string) bool {
 }
 
 func (r *Job) humanizeTime() {
-	lastScheduledRun := humanize.Time(time.Unix(int64(*r.LastScheduledTime), 0))
-	nextScheduledRun := humanize.Time(time.Unix(int64(*r.NextScheduledTime), 0))
+	if r.LastScheduledTime != nil {
+		lastScheduledRun := humanize.Time(time.Unix(int64(*r.LastScheduledTime), 0))
+		r.LastScheduledRun = &lastScheduledRun
+	}
+	if r.NextScheduledTime != nil {
+		nextScheduledRun := humanize.Time(time.Unix(int64(*r.NextScheduledTime), 0))
+		r.NextScheduledRun = &nextScheduledRun
+	}
 	if r.LastForcedTime != nil {
 		lastForcedRun := humanize.Time(time.Unix(int64(*r.LastForcedTime), 0))
 		r.LastForcedRun = &lastForcedRun
 	}
-	r.LastScheduledRun = &lastScheduledRun
-	r.NextScheduledRun = &nextScheduledRun
 	return
 }
 
