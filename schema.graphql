@@ -8,7 +8,7 @@ type Job {
   "Terminal-based command"
   cmd: String!
   "Command arguments"
-  args: String
+  args: [String]
   "Tags for easier job retrieval"
   tags: [String]
   "Last scheduled execution time (human friendly)"
@@ -45,7 +45,7 @@ input AddJobInput {
   "Terminal-based command"
   cmd: String!
   "Command arguments"
-  args: String
+  args: [String]
   "Tags for easier job retrieval"
   tags: [String]
 }

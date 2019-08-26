@@ -296,7 +296,7 @@ var parsedSchema = gqlparser.MustLoadSchema(
   "Terminal-based command"
   cmd: String!
   "Command arguments"
-  args: String
+  args: [String]
   "Tags for easier job retrieval"
   tags: [String]
   "Last scheduled execution time (human friendly)"
@@ -333,7 +333,7 @@ input AddJobInput {
   "Terminal-based command"
   cmd: String!
   "Command arguments"
-  args: String
+  args: [String]
   "Tags for easier job retrieval"
   tags: [String]
 }
@@ -635,10 +635,10 @@ func (ec *executionContext) _Job_args(ctx context.Context, field graphql.Collect
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*string)
+	res := resTmp.([]*string)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+	return ec.marshalOString2ᚕᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Job_tags(ctx context.Context, field graphql.CollectedField, obj *Job) (ret graphql.Marshaler) {
@@ -2307,7 +2307,7 @@ func (ec *executionContext) unmarshalInputAddJobInput(ctx context.Context, obj i
 			}
 		case "args":
 			var err error
-			it.Args, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			it.Args, err = ec.unmarshalOString2ᚕᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}

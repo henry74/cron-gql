@@ -13,14 +13,18 @@ import (
 	"github.com/robfig/cron/v3"
 ) // THIS CODE IS A STARTING POINT ONLY. IT WILL NOT BE UPDATED WITH SCHEMA CHANGES.
 
+// Resolver is...
 type Resolver struct {
 	Cron        *cron.Cron
 	RunningJobs map[int]Job
 }
 
+// Mutation is...
 func (r *Resolver) Mutation() MutationResolver {
 	return &mutationResolver{r}
 }
+
+// Query is...
 func (r *Resolver) Query() QueryResolver {
 	return &queryResolver{r}
 }
@@ -129,11 +133,15 @@ func execute(job AddJobInput) (string, error) {
 	if err != nil {
 		log.Printf("%s", err)
 	}
-	log.Printf("Executing command '%s' with arguments '%s'", job.Cmd, *job.Args)
+	var args []string
+	for _, v := range job.Args {
+		args = append(args, *v)
+	}
+	log.Printf("Executing command '%s' with arguments '%s'", job.Cmd, args)
 
-	out, err := exec.Command(job.Cmd, *job.Args).Output()
+	out, err := exec.Command(job.Cmd, args...).CombinedOutput()
 	if err != nil {
-		log.Printf("%s", err)
+		log.Println(err)
 	}
 	output := string(out[:])
 	log.Println(output)

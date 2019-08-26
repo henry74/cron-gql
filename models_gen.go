@@ -10,7 +10,7 @@ type AddJobInput struct {
 	// Terminal-based command
 	Cmd string `json:"cmd"`
 	// Command arguments
-	Args *string `json:"args"`
+	Args []*string `json:"args"`
 	// Tags for easier job retrieval
 	Tags []*string `json:"tags"`
 }
@@ -25,7 +25,7 @@ type Job struct {
 	// Terminal-based command
 	Cmd string `json:"cmd"`
 	// Command arguments
-	Args *string `json:"args"`
+	Args []*string `json:"args"`
 	// Tags for easier job retrieval
 	Tags []*string `json:"tags"`
 	// Last scheduled execution time (human friendly)
