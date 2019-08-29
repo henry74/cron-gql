@@ -4,6 +4,7 @@ package cron_gql
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"os"
 	"os/exec"
@@ -39,16 +40,18 @@ func (r *mutationResolver) AddJob(ctx context.Context, jobInput AddJobInput) (*J
 }
 
 func (r *mutationResolver) RemoveJob(ctx context.Context, jobID int) (*Job, error) {
-	r.Cron.Remove(cron.EntryID(jobID))
 	job := Job{}
-	if _, ok := r.RunningJobs[jobID]; ok {
-		log.Println(ok)
-		job = r.RunningJobs[jobID]
-		log.Println(job)
-		job.humanizeTime()
+	entry := r.Cron.Entry(cron.EntryID(jobID))
+	if entry.Valid() {
+		r.Cron.Remove(cron.EntryID(jobID))
+	}
+	if runningJob, ok := r.RunningJobs[jobID]; ok {
+		marshalledJob, _ := json.Marshal(runningJob)
+		_ = json.Unmarshal(marshalledJob, &job)
 		delete(r.RunningJobs, jobID)
 	}
-	return &job, nil
+
+	return job.humanizeTime(), nil
 }
 
 func (r *mutationResolver) RunJob(ctx context.Context, jobID int) (*Job, error) {
@@ -61,9 +64,8 @@ func (r *mutationResolver) RunJob(ctx context.Context, jobID int) (*Job, error) 
 		job.LastScheduledTime = &lastRunTime
 		job.NextScheduledTime = &nextRunTime
 		job.LastForcedTime = &forcedRunTime
-		job.humanizeTime()
 
-		r.RunningJobs[jobID] = job
+		r.RunningJobs[jobID] = *job.humanizeTime()
 
 	}
 	return &job, nil
@@ -111,7 +113,7 @@ func (r *Job) matchTags(tagsToCheck []*string) bool {
 	return result
 }
 
-func (r *Job) humanizeTime() {
+func (r *Job) humanizeTime() *Job {
 	if r.LastScheduledTime != nil {
 		lastScheduledRun := humanize.Time(time.Unix(int64(*r.LastScheduledTime), 0))
 		r.LastScheduledRun = &lastScheduledRun
@@ -124,7 +126,7 @@ func (r *Job) humanizeTime() {
 		lastForcedRun := humanize.Time(time.Unix(int64(*r.LastForcedTime), 0))
 		r.LastForcedRun = &lastForcedRun
 	}
-	return
+	return r
 }
 
 func execute(job AddJobInput) (string, error) {
