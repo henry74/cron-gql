@@ -14,7 +14,7 @@ Clone the repository:
 git clone git@github.com:henry74/cron-gql.git
 ```
 
-### 2. Start the GraphQL server
+### 2.1 Start the GraphQL server
 
 ```sh
 go run server/server.go
@@ -26,6 +26,14 @@ OR
 go build -o bin/cron-gql server/server.go
 ./bin/cron-gql
 ```
+
+### 2.2 start the server in docker
+
+```sh
+docker build -t go/scheduler .
+docker run -it -p 8080:8080 --rm  go/scheduler
+```
+
 
 ### 3. Using the GraphQL API
 
